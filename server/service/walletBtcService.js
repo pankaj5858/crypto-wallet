@@ -5,6 +5,7 @@ var bitcore = require('bitcore-lib');
 var explorers = require('bitcore-explorers');
 
 var constant = require('./../config/constant');
+var userService = require('./../service/userService');
 
 var shared = {};
 var __private = {};
@@ -38,6 +39,41 @@ __private.validateTransaction = function (transaction){
     return false;
 }
 
+__private.filterTransactions = function (walletResponse){
+  let toBeReturn = {};
+  if(!walletResponse){
+    return {};
+  }
+  if(walletResponse.txs && walletResponse.txs.length > 0){
+    let txs = [];
+    for(var i = 0; i< walletResponse.txs.length; i++){
+      let txToBeFilter = walletResponse.txs[i];
+      let txsObj = {
+        'block_hash': txToBeFilter.block_hash,
+        'hash': txToBeFilter.hash,
+        'block_height': txToBeFilter.block_height,
+        'fee': txToBeFilter.fees,
+        'confirmed': txToBeFilter.confirmed,
+        'received': txToBeFilter.received,
+        'double_spend': txToBeFilter.double_spend,
+        'confirmations': txToBeFilter.confirmations,
+        'sender': txToBeFilter.inputs[0].addresses[0],
+        'recipient': txToBeFilter.outputs[0].addresses[0],
+        'amount': txToBeFilter.outputs[0].value,
+        'isSend': txToBeFilter.inputs[0].addresses.indexOf(walletResponse.address) != -1
+      };
+      txs.push(txsObj);
+    }
+    toBeReturn.txs = txs;
+  }
+  toBeReturn.total_received = walletResponse.total_received;
+  toBeReturn.total_sent = walletResponse.total_sent;
+  toBeReturn.balance = walletResponse.balance;
+  toBeReturn.unconfirmed_balance = walletResponse.unconfirmed_balance;
+  toBeReturn.final_balance = walletResponse.final_balance;
+  return toBeReturn;
+}
+
 shared.transaction.send = function (transaction, cb) {
     __private.setNetwork();
     let txStatus = __private.validateTransaction(transaction);
@@ -57,8 +93,8 @@ shared.transaction.send = function (transaction, cb) {
               if (utxos.length == 0) {
                 console.log("You don't have enough Satoshis to cover the miner fee.");
                 cb("You don't have enough Satoshis to cover the miner fee.");
-              }
-              //get balance
+              } else {
+                //get balance
               let balance = unit.fromSatoshis(0).toSatoshis();
               for (var i = 0; i < utxos.length; i++) {
                 balance += unit.fromSatoshis(parseInt(utxos[i]['satoshis'])).toSatoshis();
@@ -111,6 +147,7 @@ shared.transaction.send = function (transaction, cb) {
                 console.log("You don't have enough Satoshis to cover the miner fee.");
                 cb("You don't have enough Satoshis to cover the miner fee.");
               }
+              }
             }
           });
     }
@@ -131,26 +168,36 @@ shared.transaction.get = function (transactionId, cb) {
     });
 }
 
-shared.wallet.generate = function (cb) {
+shared.wallet.generate = function (userId, cb) {
     __private.setNetwork();
     let walletInfo = {};
     walletInfo.privateKey = new bitcore.PrivateKey();
     walletInfo.address = walletInfo.privateKey.toAddress();
-    cb(false, walletInfo);
+    let address = walletInfo.address.toString();
+    let privateKey = walletInfo.privateKey.toString();
+    userService.update({id: userId, btc: address}, function(err){
+      cb(err, {'address': address, 'privatekey': privateKey});
+    });
 }
 
-shared.wallet.info = function (address, cb) {
-    __private.setNetwork();
-    let url = blockcypherUrl + '/addrs/' + address;
-    request(url, function(error, response, body) {
-        if (error) {
-          cb(error);
-        }else if (response.statusCode !== 200) {
-          cb('Error with '+response.statusCode + ' status');
-        } else {
-            cb(false, JSON.parse(body));
-        }
+shared.wallet.info = function (userId, cb) {
+    userService.get(userId, function(error, user){
+      if(error){
+        cb(error);
+      } else {
+        __private.setNetwork();
+        let url = blockcypherUrl + '/addrs/' + user.btc + '/full';
+        request(url, function(error, response, body) {
+          if (error) {
+            cb(error);
+          }else if (response.statusCode !== 200) {
+            cb('Error with '+response.statusCode + ' status');
+          } else {
+            cb(false, __private.filterTransactions(JSON.parse(body)));
+          }
 
+        });
+      }
     });
 }
 

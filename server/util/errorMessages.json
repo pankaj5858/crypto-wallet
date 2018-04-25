@@ -1,0 +1,17 @@
+{
+    "wallet":{
+        "btc":{
+
+        }
+    },
+    "user":{
+        "email":"Invalid email address",
+        "invalidPassword": "Invalid email or password",
+        "required":{
+            "message":"Invalid payload",
+            "name":"Name is required",
+            "email":"Email is required",
+            "password":"Paaword is required"
+        }
+    }
+}

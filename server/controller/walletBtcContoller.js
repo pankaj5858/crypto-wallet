@@ -8,9 +8,9 @@ shared.transaction.send = function (req, res){
     var trs = req.body.transaction;
     walletBtcService.transaction.send(trs, function(error, response){
         if(error){
-            res.status(400).send({'message': response});
+            res.status(400).send(error);
         } else {
-            res.send({'message': 'Transaction success', data: response});
+            res.send({data: response});
         }
     })
 }
@@ -21,23 +21,23 @@ shared.transaction.get = function (req, res){
         if(error) {
             res.status(400).send({message:error});
         } else {
-            res.send({'message': 'Transaction success', data: response});
+            res.send(response);
         }
     })
 }
 
 shared.wallet.generate = function (req, res){
-    walletBtcService.wallet.generate(function(error, response){
-        res.send({'message': 'New address', data: response});
+    walletBtcService.wallet.generate(req.loggedUserId, function(error, response){
+        res.send(response);
     })
 }
 
 shared.wallet.info = function (req, res){
-    walletBtcService.wallet.info(req.params.address,function(error, response){
+    walletBtcService.wallet.info(req.loggedUserId,function(error, response){
         if(error) {
             res.status(400).send({message:error});
         } else {
-            res.send({'message': 'Wallet success', data: response});
+            res.send(response);
         }
     })
 }
