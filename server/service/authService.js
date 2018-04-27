@@ -3,11 +3,20 @@ var bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
 var errorMsg = require('./../util/errorMessages.json');
 var constant = require('./../config/constant');
+var walletService = require('./walletBtcService');
 const saltRounds = 10;
 
+// shared contains public functions
 var shared = {};
+// __private contains private functions
 var __private = {};
 
+/**
+ * @description User to validate user object and password
+ * @param {*} user 
+ * @param {*} cb 
+ * @returns error message or false if not
+ */
 __private.validate = function(user, cb){
     if(!user){
         cb(errorMsg.user.required.message);
@@ -22,6 +31,12 @@ __private.validate = function(user, cb){
     }
 }
 
+/**
+ * @description Validate password and user from DB
+ * @param {*} user 
+ * @param {*} cb 
+ * @returns error and user object
+ */
 __private.validatePassword = function(user, cb){
     if(!user || user == null){
         cb(errorMsg.user.required.message);
@@ -49,6 +64,12 @@ __private.validatePassword = function(user, cb){
     }
 }
 
+/**
+ * @description use to register a user
+ * @param {*} user 
+ * @param {*} cb 
+ * @returns error and result
+ */
 shared.register = function (user, cb){
     __private.validate(user, function (error, hash){
         if(error){
@@ -56,16 +77,28 @@ shared.register = function (user, cb){
         } else {
             user.password = hash;
             let userObj = new User(user);
-            let error = error = userObj.validateSync();
-            if(error){
-                cb(error);
+            let err = userObj.validateSync();
+            if(err){
+                cb(err);
             } else {
-                userObj.save(cb);
+                userObj.save(function(err, response){
+                    if(!err){
+                        walletService.wallet.generate(response._id, cb);
+                    } else{
+                        cb(err);
+                    }
+                });
             }
         }
     });
 }
 
+/**
+ * @description use to login a user
+ * @param {*} user 
+ * @param {*} cb 
+ * @returns error and user object with access token
+ */
 shared.login = function (user, cb){
     __private.validatePassword(user, function(error, result){
         if(error){

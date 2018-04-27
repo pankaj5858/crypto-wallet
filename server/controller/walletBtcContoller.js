@@ -10,7 +10,7 @@ shared.transaction.send = function (req, res){
         if(error){
             res.status(400).send(error);
         } else {
-            res.send({data: response});
+            res.send(response);
         }
     })
 }

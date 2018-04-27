@@ -83,7 +83,7 @@ shared.transaction.send = function (transaction, cb) {
         const unit = bitcore.Unit;
         const insight = new explorers.Insight();
         const minerFee = unit.fromMilis(0.128).toSatoshis(); //TODO calculate fee
-        const transactionAmount = unit.fromMilis(transaction.amount).toSatoshis();
+        const transactionAmount = transaction.amount//unit.fromMilis(transaction.amount).toSatoshis();
         
         insight.getUnspentUtxos(transaction.fromaddress, function(error, utxos) {
             if (error) {
@@ -136,7 +136,7 @@ shared.transaction.send = function (transaction, cb) {
                       console.log('Error in broadcast: ' + error);
                       cb(error);
                     } else {
-                      cb(false, {transactionId: body});
+                      cb(false, {body});
                     }
                   });
                 } catch (error) {
@@ -176,6 +176,7 @@ shared.wallet.generate = function (userId, cb) {
     let address = walletInfo.address.toString();
     let privateKey = walletInfo.privateKey.toString();
     userService.update({id: userId, btc: address}, function(err){
+      //TODO send credentials in email to user and return success message.
       cb(err, {'address': address, 'privatekey': privateKey});
     });
 }
