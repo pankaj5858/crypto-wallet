@@ -5,7 +5,7 @@ Cryptocurrency wallet integration
 
 Clone crypto-wallet
 
-`git clone https://github.com/pankaj5858/crypto-wallet.git`
+`git clone https://github.com/ypankaj007/crypto-wallet.git`
 
 Install packages
 
